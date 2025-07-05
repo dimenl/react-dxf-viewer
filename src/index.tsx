@@ -65,15 +65,50 @@ export const DxfViewer: React.FC<DxfViewerProps> = ({ url, data }) => {
         const parser = new DxfParser();
         const parsed = parser.parseSync(text);
         if (parsed.entities) {
-          const material = new THREE.LineBasicMaterial({ color: 0x0000ff });
+          const lineMaterial = new THREE.LineBasicMaterial({ color: 0x0000ff });
+          const meshMaterial = new THREE.MeshBasicMaterial({
+            color: 0xcccccc,
+            side: THREE.DoubleSide,
+          });
+
           parsed.entities.forEach((ent: any) => {
             if (ent.type === 'LINE') {
               const geometry = new THREE.BufferGeometry().setFromPoints([
                 new THREE.Vector3(ent.start.x, ent.start.y, 0),
-                new THREE.Vector3(ent.end.x, ent.end.y, 0)
+                new THREE.Vector3(ent.end.x, ent.end.y, 0),
               ]);
-              const line = new THREE.Line(geometry, material);
+              const line = new THREE.Line(geometry, lineMaterial);
               scene.add(line);
+            } else if (ent.type === '3DFACE' && Array.isArray(ent.vertices)) {
+              const points = ent.vertices
+                .slice(0, 4)
+                .map((v: any) => new THREE.Vector3(v.x, v.y, v.z ?? 0));
+              if (points.length >= 3) {
+                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                const indices =
+                  points.length === 4 && !points[3].equals(points[2])
+                    ? [0, 1, 2, 0, 2, 3]
+                    : [0, 1, 2];
+                geometry.setIndex(indices);
+                geometry.computeVertexNormals();
+                const mesh = new THREE.Mesh(geometry, meshMaterial);
+                scene.add(mesh);
+              }
+            } else if (ent.type === 'SOLID' && Array.isArray(ent.points)) {
+              const points = ent.points
+                .slice(0, 4)
+                .map((v: any) => new THREE.Vector3(v.x, v.y, v.z ?? 0));
+              if (points.length >= 3) {
+                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                const indices =
+                  points.length === 4 && !points[3].equals(points[2])
+                    ? [0, 1, 2, 0, 2, 3]
+                    : [0, 1, 2];
+                geometry.setIndex(indices);
+                geometry.computeVertexNormals();
+                const mesh = new THREE.Mesh(geometry, meshMaterial);
+                scene.add(mesh);
+              }
             }
           });
         }
