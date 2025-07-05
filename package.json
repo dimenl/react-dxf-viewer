@@ -48,5 +48,8 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,md}\"",
     "lint": "eslint \"src/**/*.{ts,tsx,js,jsx}\"",
     "test": "jest"
-  }
+  },
+  "files": [
+    "dist"
+  ]
 }
