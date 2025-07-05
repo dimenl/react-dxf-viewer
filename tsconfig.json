@@ -7,9 +7,17 @@
     "declarationDir": "dist",
     "outDir": "dist",
     "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "types": [
+      "jest",
+      "node",
+      "@testing-library/jest-dom"
+    ],
+    "skipLibCheck": true,
+    "moduleResolution": "node"
   },
   "include": [
-    "src"
+    "src",
+    "src/types"
   ]
 }
