@@ -29,13 +29,33 @@ export interface DXFViewerProps {
   onLoad?: () => void;
   /** Called when loading or parsing fails */
   onError?: (error: unknown) => void;
+  /** Initial camera position. Defaults to `{ x: 0, y: 0, z: 5 }` */
+  cameraPosition?: { x: number; y: number; z: number };
+  /** Scene background color. Defaults to `0xffffff` */
+  backgroundColor?: THREE.ColorRepresentation;
+  /** Options passed to the OrbitControls instance */
+  orbitControls?: Partial<{
+    enableZoom: boolean;
+    enablePan: boolean;
+    enableRotate: boolean;
+    enableDamping: boolean;
+    dampingFactor: number;
+  }>;
 }
 
 /**
  * DXF viewer that accepts a File object or URL string and renders
  * basic LINE entities using three.js.
  */
-export const DXFViewer: React.FC<DXFViewerProps> = ({ file, className, onLoad, onError }) => {
+export const DXFViewer: React.FC<DXFViewerProps> = ({
+  file,
+  className,
+  onLoad,
+  onError,
+  cameraPosition,
+  backgroundColor,
+  orbitControls,
+}) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.OrthographicCamera | null>(null);
@@ -67,6 +87,9 @@ export const DXFViewer: React.FC<DXFViewerProps> = ({ file, className, onLoad, o
     if (!container) return;
 
     const scene = new THREE.Scene();
+    if (backgroundColor !== undefined) {
+      scene.background = new THREE.Color(backgroundColor);
+    }
     sceneRef.current = scene;
     const camera = new THREE.OrthographicCamera(
       container.clientWidth / -2,
@@ -76,7 +99,11 @@ export const DXFViewer: React.FC<DXFViewerProps> = ({ file, className, onLoad, o
       1,
       1000
     );
-    camera.position.z = 5;
+    camera.position.set(
+      cameraPosition?.x ?? 0,
+      cameraPosition?.y ?? 0,
+      cameraPosition?.z ?? 5
+    );
     cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -86,6 +113,11 @@ export const DXFViewer: React.FC<DXFViewerProps> = ({ file, className, onLoad, o
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
+    if (orbitControls) {
+      Object.entries(orbitControls).forEach(([key, value]) => {
+        (controls as any)[key] = value;
+      });
+    }
     controlsRef.current = controls;
 
     const animate = () => {
