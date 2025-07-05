@@ -1,7 +1,14 @@
 {
-  "name": "react-dxf-viewer",
-  "version": "1.0.0",
-  "main": "index.js",
   "author": "Darshan Sithan",
-  "license": "MIT"
+  "description": "A React component for viewing DXF files.",
+  "license": "MIT",
+  "main": "index.js",
+  "module": "index.js",
+  "name": "react-dxf-viewer",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/darshan-sithan/react-dxf-viewer"
+  },
+  "types": "index.d.ts",
+  "version": "1.0.0"
 }
