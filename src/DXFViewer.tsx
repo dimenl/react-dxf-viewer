@@ -100,7 +100,7 @@ export const DXFViewer: React.FC<DXFViewerProps> = ({
       container.clientWidth / 2,
       container.clientHeight / 2,
       container.clientHeight / -2,
-      1,
+      0.1,
       1000,
     );
     camera.position.set(
@@ -200,7 +200,10 @@ export const DXFViewer: React.FC<DXFViewerProps> = ({
                 ent.end.y,
                 ent.end.z ?? 0,
               );
-              const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
+              const geometry = new THREE.BufferGeometry().setFromPoints([
+                start,
+                end,
+              ]);
 
               const line = new THREE.Line(geometry, lineMaterial);
               scene.add(line);
@@ -262,11 +265,10 @@ export const DXFViewer: React.FC<DXFViewerProps> = ({
             const size = new THREE.Vector3();
             box.getSize(size);
             const maxDim = Math.max(size.x, size.y);
-            camera.position.set(
-              center.x,
-              center.y,
-              cameraPosition?.z ?? maxDim * 2,
-            );
+            const camZ = cameraPosition?.z ?? Math.max(maxDim * 2, 1);
+            camera.position.set(center.x, center.y, camZ);
+            camera.near = 0.1;
+            camera.far = Math.max(camZ * 2, 1);
             camera.updateProjectionMatrix();
           }
         }
