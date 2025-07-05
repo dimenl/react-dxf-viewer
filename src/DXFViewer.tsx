@@ -15,7 +15,8 @@ function readDXF(source: string | File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(reader.error ?? new Error('Failed to read file'));
+    reader.onerror = () =>
+      reject(reader.error ?? new Error('Failed to read file'));
     reader.readAsText(source);
   });
 }
@@ -33,6 +34,8 @@ export interface DXFViewerProps {
   cameraPosition?: { x: number; y: number; z: number };
   /** Scene background color. Defaults to `0xffffff` */
   backgroundColor?: THREE.ColorRepresentation;
+  /** Line color for LINE entities. Defaults to `0x0000ff` */
+  lineColor?: THREE.ColorRepresentation;
   /** Options passed to the OrbitControls instance */
   orbitControls?: Partial<{
     enableZoom: boolean;
@@ -54,6 +57,7 @@ export const DXFViewer: React.FC<DXFViewerProps> = ({
   onError,
   cameraPosition,
   backgroundColor,
+  lineColor,
   orbitControls,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -97,12 +101,12 @@ export const DXFViewer: React.FC<DXFViewerProps> = ({
       container.clientHeight / 2,
       container.clientHeight / -2,
       1,
-      1000
+      1000,
     );
     camera.position.set(
       cameraPosition?.x ?? 0,
       cameraPosition?.y ?? 0,
-      cameraPosition?.z ?? 5
+      cameraPosition?.z ?? 5,
     );
     cameraRef.current = camera;
 
@@ -165,22 +169,49 @@ export const DXFViewer: React.FC<DXFViewerProps> = ({
         const parser = new DxfParser();
         const parsed = parser.parseSync(text);
         if (parsed.entities) {
-          const lineMaterial = new THREE.LineBasicMaterial({ color: 0x0000ff });
+          const lineMaterial = new THREE.LineBasicMaterial({
+            color: lineColor ?? 0x0000ff,
+          });
           const meshMaterial = new THREE.MeshBasicMaterial({
             color: 0xcccccc,
             side: THREE.DoubleSide,
           });
 
+          const box = new THREE.Box3();
+          let hasGeometry = false;
+
           parsed.entities.forEach((ent: any) => {
-            if (ent.type === 'LINE') {
-              const geometry = new THREE.BufferGeometry().setFromPoints([
-                new THREE.Vector3(ent.start.x, ent.start.y, 0),
-                new THREE.Vector3(ent.end.x, ent.end.y, 0),
-              ]);
+            if (
+              ent.type === 'LINE' &&
+              ent.start &&
+              ent.end &&
+              typeof ent.start.x === 'number' &&
+              typeof ent.start.y === 'number' &&
+              typeof ent.end.x === 'number' &&
+              typeof ent.end.y === 'number'
+            ) {
+              const start = new THREE.Vector3(
+                ent.start.x,
+                ent.start.y,
+                ent.start.z ?? 0,
+              );
+              const end = new THREE.Vector3(
+                ent.end.x,
+                ent.end.y,
+                ent.end.z ?? 0,
+              );
+              const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
               const line = new THREE.Line(geometry, lineMaterial);
               scene.add(line);
+              box.expandByPoint(start);
+              box.expandByPoint(end);
+              hasGeometry = true;
             } else if (ent.type === '3DFACE' && Array.isArray(ent.vertices)) {
               const points = ent.vertices
+                .filter(
+                  (v: any) =>
+                    v && typeof v.x === 'number' && typeof v.y === 'number',
+                )
                 .slice(0, 4)
                 .map((v: any) => new THREE.Vector3(v.x, v.y, v.z ?? 0));
               if (points.length >= 3) {
@@ -193,9 +224,15 @@ export const DXFViewer: React.FC<DXFViewerProps> = ({
                 geometry.computeVertexNormals();
                 const mesh = new THREE.Mesh(geometry, meshMaterial);
                 scene.add(mesh);
+                points.forEach((p) => box.expandByPoint(p));
+                hasGeometry = true;
               }
             } else if (ent.type === 'SOLID' && Array.isArray(ent.points)) {
               const points = ent.points
+                .filter(
+                  (v: any) =>
+                    v && typeof v.x === 'number' && typeof v.y === 'number',
+                )
                 .slice(0, 4)
                 .map((v: any) => new THREE.Vector3(v.x, v.y, v.z ?? 0));
               if (points.length >= 3) {
@@ -208,9 +245,25 @@ export const DXFViewer: React.FC<DXFViewerProps> = ({
                 geometry.computeVertexNormals();
                 const mesh = new THREE.Mesh(geometry, meshMaterial);
                 scene.add(mesh);
+                points.forEach((p) => box.expandByPoint(p));
+                hasGeometry = true;
               }
             }
           });
+          if (hasGeometry) {
+            const center = new THREE.Vector3();
+            box.getCenter(center);
+            controls.target.copy(center);
+            const size = new THREE.Vector3();
+            box.getSize(size);
+            const maxDim = Math.max(size.x, size.y);
+            camera.position.set(
+              center.x,
+              center.y,
+              cameraPosition?.z ?? maxDim * 2,
+            );
+            camera.updateProjectionMatrix();
+          }
         }
         renderer.render(scene, camera);
         onLoad?.();
@@ -230,7 +283,13 @@ export const DXFViewer: React.FC<DXFViewerProps> = ({
     return cleanup;
   }, [file, onLoad, onError]);
 
-  return <div ref={containerRef} className={className} style={{ width: '100%', height: '100%' }} />;
+  return (
+    <div
+      ref={containerRef}
+      className={className}
+      style={{ width: '100%', height: '100%' }}
+    />
+  );
 };
 
 export default DXFViewer;
