@@ -10,5 +10,10 @@
     "url": "https://github.com/darshan-sithan/react-dxf-viewer"
   },
   "types": "index.d.ts",
-  "version": "1.0.0"
+  "version": "1.0.0",
+  "devDependencies": {
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "typescript": "^5.8.3"
+  }
 }
