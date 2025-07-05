@@ -201,6 +201,7 @@ export const DXFViewer: React.FC<DXFViewerProps> = ({
                 ent.end.z ?? 0,
               );
               const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
+
               const line = new THREE.Line(geometry, lineMaterial);
               scene.add(line);
               box.expandByPoint(start);
@@ -215,7 +216,9 @@ export const DXFViewer: React.FC<DXFViewerProps> = ({
                 .slice(0, 4)
                 .map((v: any) => new THREE.Vector3(v.x, v.y, v.z ?? 0));
               if (points.length >= 3) {
-                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                const geometry = new THREE.BufferGeometry().setFromPoints(
+                  points,
+                );
                 const indices =
                   points.length === 4 && !points[3].equals(points[2])
                     ? [0, 1, 2, 0, 2, 3]
@@ -236,7 +239,9 @@ export const DXFViewer: React.FC<DXFViewerProps> = ({
                 .slice(0, 4)
                 .map((v: any) => new THREE.Vector3(v.x, v.y, v.z ?? 0));
               if (points.length >= 3) {
-                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                const geometry = new THREE.BufferGeometry().setFromPoints(
+                  points,
+                );
                 const indices =
                   points.length === 4 && !points[3].equals(points[2])
                     ? [0, 1, 2, 0, 2, 3]
