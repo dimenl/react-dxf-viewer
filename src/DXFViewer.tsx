@@ -15,7 +15,8 @@ function readDXF(source: string | File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(reader.error ?? new Error('Failed to read file'));
+    reader.onerror = () =>
+      reject(reader.error ?? new Error('Failed to read file'));
     reader.readAsText(source);
   });
 }
@@ -97,12 +98,12 @@ export const DXFViewer: React.FC<DXFViewerProps> = ({
       container.clientHeight / 2,
       container.clientHeight / -2,
       1,
-      1000
+      1000,
     );
     camera.position.set(
       cameraPosition?.x ?? 0,
       cameraPosition?.y ?? 0,
-      cameraPosition?.z ?? 5
+      cameraPosition?.z ?? 5,
     );
     cameraRef.current = camera;
 
@@ -172,19 +173,33 @@ export const DXFViewer: React.FC<DXFViewerProps> = ({
           });
 
           parsed.entities.forEach((ent: any) => {
-            if (ent.type === 'LINE') {
+            if (
+              ent.type === 'LINE' &&
+              ent.start &&
+              ent.end &&
+              typeof ent.start.x === 'number' &&
+              typeof ent.start.y === 'number' &&
+              typeof ent.end.x === 'number' &&
+              typeof ent.end.y === 'number'
+            ) {
               const geometry = new THREE.BufferGeometry().setFromPoints([
-                new THREE.Vector3(ent.start.x, ent.start.y, 0),
-                new THREE.Vector3(ent.end.x, ent.end.y, 0),
+                new THREE.Vector3(ent.start.x, ent.start.y, ent.start.z ?? 0),
+                new THREE.Vector3(ent.end.x, ent.end.y, ent.end.z ?? 0),
               ]);
               const line = new THREE.Line(geometry, lineMaterial);
               scene.add(line);
             } else if (ent.type === '3DFACE' && Array.isArray(ent.vertices)) {
               const points = ent.vertices
+                .filter(
+                  (v: any) =>
+                    v && typeof v.x === 'number' && typeof v.y === 'number',
+                )
                 .slice(0, 4)
                 .map((v: any) => new THREE.Vector3(v.x, v.y, v.z ?? 0));
               if (points.length >= 3) {
-                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                const geometry = new THREE.BufferGeometry().setFromPoints(
+                  points,
+                );
                 const indices =
                   points.length === 4 && !points[3].equals(points[2])
                     ? [0, 1, 2, 0, 2, 3]
@@ -196,10 +211,16 @@ export const DXFViewer: React.FC<DXFViewerProps> = ({
               }
             } else if (ent.type === 'SOLID' && Array.isArray(ent.points)) {
               const points = ent.points
+                .filter(
+                  (v: any) =>
+                    v && typeof v.x === 'number' && typeof v.y === 'number',
+                )
                 .slice(0, 4)
                 .map((v: any) => new THREE.Vector3(v.x, v.y, v.z ?? 0));
               if (points.length >= 3) {
-                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                const geometry = new THREE.BufferGeometry().setFromPoints(
+                  points,
+                );
                 const indices =
                   points.length === 4 && !points[3].equals(points[2])
                     ? [0, 1, 2, 0, 2, 3]
@@ -230,7 +251,13 @@ export const DXFViewer: React.FC<DXFViewerProps> = ({
     return cleanup;
   }, [file, onLoad, onError]);
 
-  return <div ref={containerRef} className={className} style={{ width: '100%', height: '100%' }} />;
+  return (
+    <div
+      ref={containerRef}
+      className={className}
+      style={{ width: '100%', height: '100%' }}
+    />
+  );
 };
 
 export default DXFViewer;

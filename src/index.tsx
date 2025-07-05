@@ -75,12 +75,12 @@ export const DxfViewer: React.FC<DxfViewerProps> = ({
       container.clientHeight / 2,
       container.clientHeight / -2,
       1,
-      1000
+      1000,
     );
     camera.position.set(
       cameraPosition?.x ?? 0,
       cameraPosition?.y ?? 0,
-      cameraPosition?.z ?? 5
+      cameraPosition?.z ?? 5,
     );
     cameraRef.current = camera;
 
@@ -117,19 +117,33 @@ export const DxfViewer: React.FC<DxfViewerProps> = ({
           });
 
           parsed.entities.forEach((ent: any) => {
-            if (ent.type === 'LINE') {
+            if (
+              ent.type === 'LINE' &&
+              ent.start &&
+              ent.end &&
+              typeof ent.start.x === 'number' &&
+              typeof ent.start.y === 'number' &&
+              typeof ent.end.x === 'number' &&
+              typeof ent.end.y === 'number'
+            ) {
               const geometry = new THREE.BufferGeometry().setFromPoints([
-                new THREE.Vector3(ent.start.x, ent.start.y, 0),
-                new THREE.Vector3(ent.end.x, ent.end.y, 0),
+                new THREE.Vector3(ent.start.x, ent.start.y, ent.start.z ?? 0),
+                new THREE.Vector3(ent.end.x, ent.end.y, ent.end.z ?? 0),
               ]);
               const line = new THREE.Line(geometry, lineMaterial);
               scene.add(line);
             } else if (ent.type === '3DFACE' && Array.isArray(ent.vertices)) {
               const points = ent.vertices
+                .filter(
+                  (v: any) =>
+                    v && typeof v.x === 'number' && typeof v.y === 'number',
+                )
                 .slice(0, 4)
                 .map((v: any) => new THREE.Vector3(v.x, v.y, v.z ?? 0));
               if (points.length >= 3) {
-                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                const geometry = new THREE.BufferGeometry().setFromPoints(
+                  points,
+                );
                 const indices =
                   points.length === 4 && !points[3].equals(points[2])
                     ? [0, 1, 2, 0, 2, 3]
@@ -141,10 +155,16 @@ export const DxfViewer: React.FC<DxfViewerProps> = ({
               }
             } else if (ent.type === 'SOLID' && Array.isArray(ent.points)) {
               const points = ent.points
+                .filter(
+                  (v: any) =>
+                    v && typeof v.x === 'number' && typeof v.y === 'number',
+                )
                 .slice(0, 4)
                 .map((v: any) => new THREE.Vector3(v.x, v.y, v.z ?? 0));
               if (points.length >= 3) {
-                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                const geometry = new THREE.BufferGeometry().setFromPoints(
+                  points,
+                );
                 const indices =
                   points.length === 4 && !points[3].equals(points[2])
                     ? [0, 1, 2, 0, 2, 3]
@@ -165,9 +185,9 @@ export const DxfViewer: React.FC<DxfViewerProps> = ({
 
     if (url) {
       fetch(url)
-        .then(res => res.text())
+        .then((res) => res.text())
         .then(load)
-        .catch(err => console.error('Failed to load DXF:', err));
+        .catch((err) => console.error('Failed to load DXF:', err));
     } else if (data) {
       load(data);
     }
