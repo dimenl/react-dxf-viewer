@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useCallback } from 'react';
 import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import DxfParser from 'dxf-parser';
 import { useResizeObserver } from './useResizeObserver';
 
@@ -19,6 +20,8 @@ export const DxfViewer: React.FC<DxfViewerProps> = ({ url, data }) => {
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.OrthographicCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const controlsRef = useRef<OrbitControls | null>(null);
+  const animRef = useRef<number | null>(null);
 
   const handleResize = useCallback(() => {
     const container = containerRef.current;
@@ -33,6 +36,7 @@ export const DxfViewer: React.FC<DxfViewerProps> = ({ url, data }) => {
     camera.top = container.clientHeight / 2;
     camera.bottom = container.clientHeight / -2;
     camera.updateProjectionMatrix();
+    controlsRef.current?.update();
     renderer.render(scene, camera);
   }, []);
 
@@ -59,6 +63,17 @@ export const DxfViewer: React.FC<DxfViewerProps> = ({ url, data }) => {
     renderer.setSize(container.clientWidth, container.clientHeight);
     container.appendChild(renderer.domElement);
     rendererRef.current = renderer;
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controlsRef.current = controls;
+
+    const animate = () => {
+      controls.update();
+      renderer.render(scene, camera);
+      animRef.current = requestAnimationFrame(animate);
+    };
+    animate();
 
     const load = (text: string) => {
       try {
@@ -128,6 +143,10 @@ export const DxfViewer: React.FC<DxfViewerProps> = ({ url, data }) => {
     }
 
     return () => {
+      if (animRef.current !== null) {
+        cancelAnimationFrame(animRef.current);
+      }
+      controls.dispose();
       renderer.dispose();
       while (container.firstChild) {
         container.removeChild(container.firstChild);
@@ -135,6 +154,7 @@ export const DxfViewer: React.FC<DxfViewerProps> = ({ url, data }) => {
       sceneRef.current = undefined;
       cameraRef.current = undefined;
       rendererRef.current = undefined;
+      controlsRef.current = undefined;
     };
   }, [url, data]);
 
