@@ -2,6 +2,22 @@ import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import DxfParser from 'dxf-parser';
 
+/**
+ * Helper that reads the provided file or url and resolves with the
+ * DXF text contents.
+ */
+function readDXF(source: string | File): Promise<string> {
+  if (typeof source === 'string') {
+    return fetch(source).then((res) => res.text());
+  }
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error ?? new Error('Failed to read file'));
+    reader.readAsText(source);
+  });
+}
+
 export interface DXFViewerProps {
   /** DXF file to load. Can be a URL string or a File object */
   file: string | File;
@@ -71,24 +87,12 @@ export const DXFViewer: React.FC<DXFViewerProps> = ({ file, className, onLoad, o
       }
     };
 
-    if (typeof file === 'string') {
-      fetch(file)
-        .then(res => res.text())
-        .then(loadData)
-        .catch(err => {
-          console.error('Failed to load DXF:', err);
-          onError?.(err);
-        });
-    } else {
-      const reader = new FileReader();
-      reader.onload = () => loadData(reader.result as string);
-      reader.onerror = () => {
-        const error = reader.error ?? new Error('Failed to read file');
-        console.error(error);
-        onError?.(error);
-      };
-      reader.readAsText(file);
-    }
+    readDXF(file)
+      .then(loadData)
+      .catch((err) => {
+        console.error('Failed to load DXF:', err);
+        onError?.(err);
+      });
 
     return cleanup;
   }, [file, onLoad, onError]);
