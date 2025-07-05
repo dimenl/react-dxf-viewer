@@ -1,0 +1,16 @@
+node_modules/
+demo/
+*.log
+*.ts
+*.tsx
+*.test.*
+jest.config.js
+jest.setup.ts
+rollup.config.js
+vite.config.ts
+.eslintrc.js
+.eslintignore
+.prettierrc
+.prettierignore
+src/
+!dist/
