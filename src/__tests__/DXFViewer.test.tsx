@@ -1,4 +1,4 @@
-import "@testing-library/jest-dom";
+import '@testing-library/jest-dom';
 import React from 'react';
 import { render, waitFor, cleanup } from '@testing-library/react';
 import { DXFViewer } from '../DXFViewer';
@@ -31,17 +31,29 @@ jest.mock('three', () => {
       computeVertexNormals: jest.fn(),
       dispose: jest.fn(),
     })),
-    LineBasicMaterial: jest.fn().mockImplementation(() => ({ dispose: jest.fn() })),
-    MeshBasicMaterial: jest.fn().mockImplementation(() => ({ dispose: jest.fn() })),
+    LineBasicMaterial: jest
+      .fn()
+      .mockImplementation(() => ({ dispose: jest.fn() })),
+    MeshBasicMaterial: jest
+      .fn()
+      .mockImplementation(() => ({ dispose: jest.fn() })),
     Line: jest.fn(),
     Mesh: jest.fn(),
     Color: jest.fn(),
-    Vector3: jest.fn().mockImplementation((x: number, y: number, z: number) => ({
-      x,
-      y,
-      z,
-      equals: jest.fn().mockReturnValue(false),
+    Box3: jest.fn().mockImplementation(() => ({
+      expandByPoint: jest.fn(),
+      getCenter: jest.fn(() => ({ x: 0, y: 0, z: 0 })),
+      getSize: jest.fn(() => ({ x: 1, y: 1, z: 1 })),
+      isEmpty: jest.fn(() => false),
     })),
+    Vector3: jest
+      .fn()
+      .mockImplementation((x: number, y: number, z: number) => ({
+        x,
+        y,
+        z,
+        equals: jest.fn().mockReturnValue(false),
+      })),
     DoubleSide: 'DoubleSide',
   };
 });
@@ -61,9 +73,13 @@ afterEach(() => {
 });
 
 describe('DXFViewer', () => {
-  const file = new File([
-    '0\nSECTION\n2\nENTITIES\n0\nLINE\n8\n0\n10\n0\n20\n0\n11\n1\n21\n1\n0\nENDSEC\n0\nEOF',
-  ], 'test.dxf', { type: 'text/plain' });
+  const file = new File(
+    [
+      '0\nSECTION\n2\nENTITIES\n0\nLINE\n8\n0\n10\n0\n20\n0\n11\n1\n21\n1\n0\nENDSEC\n0\nEOF',
+    ],
+    'test.dxf',
+    { type: 'text/plain' },
+  );
 
   test('parses DXF on mount', async () => {
     const spy = jest.spyOn(DxfParser.prototype, 'parseSync');
