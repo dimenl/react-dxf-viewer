@@ -12,21 +12,31 @@
   "types": "dist/index.d.ts",
   "version": "1.0.0",
   "devDependencies": {
+    "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@testing-library/jest-dom": "^6.1.5",
+    "@testing-library/react": "^14.1.0",
+    "@types/jest": "^29.5.3",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
-    "typescript": "^5.8.3",
+    "@vitejs/plugin-react": "^4.0.2",
+    "jest": "^29.6.0",
+    "jest-environment-jsdom": "^29.6.0",
     "rollup": "^3.29.4",
-    "@rollup/plugin-node-resolve": "^15.2.3",
-    "@rollup/plugin-commonjs": "^25.0.7",
-    "rollup-plugin-typescript2": "^0.35.0"
+    "rollup-plugin-typescript2": "^0.35.0",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.8.3",
+    "vite": "^5.2.0"
   },
   "dependencies": {
+    "dxf-parser": "^1.1.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "three": "^0.178.0",
-    "dxf-parser": "^1.1.2"
+    "three": "^0.178.0"
   },
   "scripts": {
-    "build": "rollup -c"
+    "build": "rollup -c",
+    "dev": "vite",
+    "test": "jest"
   }
 }
