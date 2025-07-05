@@ -99,11 +99,29 @@ export const DXFViewer: React.FC<DXFViewerProps> = ({ file, className, onLoad, o
       if (animRef.current !== null) {
         cancelAnimationFrame(animRef.current);
       }
+
       controls.dispose();
-      rendererRef.current?.dispose();
+
+      // Dispose geometries and materials from the scene
+      scene.traverse((obj) => {
+        const mesh = obj as THREE.Mesh;
+        if (mesh.geometry) {
+          mesh.geometry.dispose();
+        }
+        if (Array.isArray((mesh as any).material)) {
+          (mesh as any).material.forEach((m: any) => m.dispose && m.dispose());
+        } else if ((mesh as any).material) {
+          (mesh as any).material.dispose && (mesh as any).material.dispose();
+        }
+      });
+
+      renderer.dispose();
+      renderer.forceContextLoss();
+
       while (container.firstChild) {
         container.removeChild(container.firstChild);
       }
+
       sceneRef.current = undefined;
       cameraRef.current = undefined;
       rendererRef.current = undefined;
