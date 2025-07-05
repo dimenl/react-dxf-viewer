@@ -2,18 +2,22 @@ import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import DxfParser from 'dxf-parser';
 
-export interface DxfViewerProps {
-  /** URL of the DXF file to load */
-  url?: string;
-  /** Raw DXF string. Used when `url` is not provided */
-  data?: string;
+export interface DXFViewerProps {
+  /** DXF file to load. Can be a URL string or a File object */
+  file: string | File;
+  /** Optional CSS class for the container */
+  className?: string;
+  /** Called when the DXF is successfully loaded */
+  onLoad?: () => void;
+  /** Called when loading or parsing fails */
+  onError?: (error: unknown) => void;
 }
 
 /**
- * Basic DXF viewer using three.js. It loads a DXF file using `dxf-parser`
- * and renders simple LINE entities.
+ * DXF viewer that accepts a File object or URL string and renders
+ * basic LINE entities using three.js.
  */
-export const DxfViewer: React.FC<DxfViewerProps> = ({ url, data }) => {
+export const DXFViewer: React.FC<DXFViewerProps> = ({ file, className, onLoad, onError }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -35,7 +39,14 @@ export const DxfViewer: React.FC<DxfViewerProps> = ({ url, data }) => {
     renderer.setSize(container.clientWidth, container.clientHeight);
     container.appendChild(renderer.domElement);
 
-    const load = (text: string) => {
+    const cleanup = () => {
+      renderer.dispose();
+      while (container.firstChild) {
+        container.removeChild(container.firstChild);
+      }
+    };
+
+    const loadData = (text: string) => {
       try {
         const parser = new DxfParser();
         const parsed = parser.parseSync(text);
@@ -53,30 +64,36 @@ export const DxfViewer: React.FC<DxfViewerProps> = ({ url, data }) => {
           });
         }
         renderer.render(scene, camera);
+        onLoad?.();
       } catch (err) {
         console.error('Error parsing DXF:', err);
+        onError?.(err);
       }
     };
 
-    if (url) {
-      fetch(url)
+    if (typeof file === 'string') {
+      fetch(file)
         .then(res => res.text())
-        .then(load)
-        .catch(err => console.error('Failed to load DXF:', err));
-    } else if (data) {
-      load(data);
+        .then(loadData)
+        .catch(err => {
+          console.error('Failed to load DXF:', err);
+          onError?.(err);
+        });
+    } else {
+      const reader = new FileReader();
+      reader.onload = () => loadData(reader.result as string);
+      reader.onerror = () => {
+        const error = reader.error ?? new Error('Failed to read file');
+        console.error(error);
+        onError?.(error);
+      };
+      reader.readAsText(file);
     }
 
-    return () => {
-      renderer.dispose();
-      while (container.firstChild) {
-        container.removeChild(container.firstChild);
-      }
-    };
-  }, [url, data]);
+    return cleanup;
+  }, [file, onLoad, onError]);
 
-  return <div ref={containerRef} style={{ width: '100%', height: '100%' }} />;
+  return <div ref={containerRef} className={className} style={{ width: '100%', height: '100%' }} />;
 };
 
-export default DxfViewer;
-export { DXFViewer } from './DXFViewer';
+export default DXFViewer;
