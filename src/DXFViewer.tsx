@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import * as THREE from 'three';
 import DxfParser from 'dxf-parser';
+import { useResizeObserver } from './useResizeObserver';
 
 /**
  * Helper that reads the provided file or url and resolves with the
@@ -38,6 +39,24 @@ export const DXFViewer: React.FC<DXFViewerProps> = ({ file, className, onLoad, o
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.OrthographicCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+
+  const handleResize = useCallback(() => {
+    const container = containerRef.current;
+    const camera = cameraRef.current;
+    const renderer = rendererRef.current;
+    const scene = sceneRef.current;
+    if (!container || !camera || !renderer || !scene) return;
+
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    camera.left = container.clientWidth / -2;
+    camera.right = container.clientWidth / 2;
+    camera.top = container.clientHeight / 2;
+    camera.bottom = container.clientHeight / -2;
+    camera.updateProjectionMatrix();
+    renderer.render(scene, camera);
+  }, []);
+
+  useResizeObserver(containerRef, handleResize);
 
   useEffect(() => {
     const container = containerRef.current;

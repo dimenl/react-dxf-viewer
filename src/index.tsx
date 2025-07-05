@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import * as THREE from 'three';
 import DxfParser from 'dxf-parser';
+import { useResizeObserver } from './useResizeObserver';
 
 export interface DxfViewerProps {
   /** URL of the DXF file to load */
@@ -15,12 +16,34 @@ export interface DxfViewerProps {
  */
 export const DxfViewer: React.FC<DxfViewerProps> = ({ url, data }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const sceneRef = useRef<THREE.Scene | null>(null);
+  const cameraRef = useRef<THREE.OrthographicCamera | null>(null);
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+
+  const handleResize = useCallback(() => {
+    const container = containerRef.current;
+    const camera = cameraRef.current;
+    const renderer = rendererRef.current;
+    const scene = sceneRef.current;
+    if (!container || !camera || !renderer || !scene) return;
+
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    camera.left = container.clientWidth / -2;
+    camera.right = container.clientWidth / 2;
+    camera.top = container.clientHeight / 2;
+    camera.bottom = container.clientHeight / -2;
+    camera.updateProjectionMatrix();
+    renderer.render(scene, camera);
+  }, []);
+
+  useResizeObserver(containerRef, handleResize);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
     const scene = new THREE.Scene();
+    sceneRef.current = scene;
     const camera = new THREE.OrthographicCamera(
       container.clientWidth / -2,
       container.clientWidth / 2,
@@ -30,10 +53,12 @@ export const DxfViewer: React.FC<DxfViewerProps> = ({ url, data }) => {
       1000
     );
     camera.position.z = 5;
+    cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(container.clientWidth, container.clientHeight);
     container.appendChild(renderer.domElement);
+    rendererRef.current = renderer;
 
     const load = (text: string) => {
       try {
@@ -72,6 +97,9 @@ export const DxfViewer: React.FC<DxfViewerProps> = ({ url, data }) => {
       while (container.firstChild) {
         container.removeChild(container.firstChild);
       }
+      sceneRef.current = undefined;
+      cameraRef.current = undefined;
+      rendererRef.current = undefined;
     };
   }, [url, data]);
 
