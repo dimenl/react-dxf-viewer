@@ -35,12 +35,16 @@ export interface DXFViewerProps {
  */
 export const DXFViewer: React.FC<DXFViewerProps> = ({ file, className, onLoad, onError }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const sceneRef = useRef<THREE.Scene | null>(null);
+  const cameraRef = useRef<THREE.OrthographicCamera | null>(null);
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
     const scene = new THREE.Scene();
+    sceneRef.current = scene;
     const camera = new THREE.OrthographicCamera(
       container.clientWidth / -2,
       container.clientWidth / 2,
@@ -50,16 +54,21 @@ export const DXFViewer: React.FC<DXFViewerProps> = ({ file, className, onLoad, o
       1000
     );
     camera.position.z = 5;
+    cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(container.clientWidth, container.clientHeight);
     container.appendChild(renderer.domElement);
+    rendererRef.current = renderer;
 
     const cleanup = () => {
-      renderer.dispose();
+      rendererRef.current?.dispose();
       while (container.firstChild) {
         container.removeChild(container.firstChild);
       }
+      sceneRef.current = undefined;
+      cameraRef.current = undefined;
+      rendererRef.current = undefined;
     };
 
     const loadData = (text: string) => {
