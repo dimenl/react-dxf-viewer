@@ -3,6 +3,13 @@
     "target": "ESNext",
     "module": "ESNext",
     "jsx": "react",
-    "declaration": true
-  }
+    "declaration": true,
+    "declarationDir": "dist",
+    "outDir": "dist",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true
+  },
+  "include": [
+    "src"
+  ]
 }
